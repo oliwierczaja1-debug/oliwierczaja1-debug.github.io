@@ -4,10 +4,9 @@
   <meta charset="UTF-8" />
   <title>Mapa dostaw</title>
 
-  <!-- Leaflet CSS (JSDelivr CDN) -->
   <link
     rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
 
   <style>
@@ -29,14 +28,15 @@
 <body>
   <div id="map"></div>
 
-  <!-- Leaflet JS (JSDelivr CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    const sheetUrl =
+    // PODSTAWOWY LINK DO CSV (ten który działa)
+    const baseSheetUrl =
       "https://docs.google.com/spreadsheets/d/1LkO9jIzfLNJAYlVLGgOdZ9K4pm2WpjAa6CzmRFXbDPI/export?format=csv&gid=0";
 
-    const csvUrl = "https://cors.eu.org/" + sheetUrl;
+    // jeśli korzystasz lokalnie z cors.eu.org, możesz zamiast baseSheetUrl dać:
+    // const baseSheetUrl = "https://cors.eu.org/" + "TWÓJ_LINK_DO_CSV";
 
     const map = L.map("map").setView([48.7, 19.5], 7);
 
@@ -44,32 +44,54 @@
       maxZoom: 18
     }).addTo(map);
 
-    fetch(csvUrl)
-      .then(r => r.text())
-      .then(text => {
-        const lines = text.trim().split("\n");
-        const bounds = [];
+    // warstwa, w której trzymamy WSZYSTKIE markery
+    const markersLayer = L.layerGroup().addTo(map);
 
-        lines.forEach((line, i) => {
-          const nums = line.match(/-?\d+[.,]?\d*/g);
-          if (!nums || nums.length < 2) return;
+    function loadPoints() {
+      // dodajemy parametr anty-cache, żeby za każdym razem pobierał świeży plik
+      const url = baseSheetUrl + "&cacheBust=" + Date.now();
 
-          const lat = parseFloat(nums[0].replace(",", "."));
-          const lon = parseFloat(nums[1].replace(",", "."));
+      fetch(url)
+        .then(r => r.text())
+        .then(text => {
+          const lines = text.trim().split("\n");
+          const bounds = [];
 
-          if (isNaN(lat) || isNaN(lon)) return;
+          // czyścimy stare markery
+          markersLayer.clearLayers();
 
-          const icon = L.divIcon({
-            className: "number-icon",
-            html: i + 1,
+          lines.forEach((line, i) => {
+            const nums = line.match(/-?\d+[.,]?\d*/g);
+            if (!nums || nums.length < 2) return;
+
+            // A = lat, B = lon
+            const lat = parseFloat(nums[0].replace(",", "."));
+            const lon = parseFloat(nums[1].replace(",", "."));
+            if (isNaN(lat) || isNaN(lon)) return;
+
+            const icon = L.divIcon({
+              className: "number-icon",
+              html: i + 1
+            });
+
+            const marker = L.marker([lat, lon], { icon });
+            markersLayer.addLayer(marker);
+            bounds.push([lat, lon]);
           });
 
-          L.marker([lat, lon], { icon }).addTo(map);
-          bounds.push([lat, lon]);
-        });
+          if (bounds.length > 0) {
+            map.fitBounds(bounds);
+          }
+        })
+        .catch(err => console.error("Błąd pobierania CSV:", err));
+    }
 
-        if (bounds.length > 0) map.fitBounds(bounds);
-      });
+    // pierwsze wczytanie
+    loadPoints();
+
+    // AUTO-ODŚWIEŻANIE – co 60 sekund (60000 ms)
+    // możesz zmienić np. na 30000 (30 sekund) albo 120000 (2 minuty)
+    setInterval(loadPoints, 60000);
   </script>
 </body>
 </html>
