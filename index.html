@@ -1,1 +1,71 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mapa dostaw</title>
+
+  <link rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+  <style>
+    html, body {margin: 0; padding: 0; height: 100%;}
+    #map {height: 100vh; width: 100vw;}
+    .number-icon {
+      background-color: #ff5722;
+      color: white;
+      width: 28px; height: 28px;
+      line-height: 28px;
+      text-align: center;
+      border-radius: 50%;
+      font-weight: bold;
+      border: 2px solid white;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const sheetUrl =
+      "https://docs.google.com/spreadsheets/d/1LkO9jIzfLNJAYlVLGgOdZ9K4pm2WpjAa6CzmRFXbDPI/export?format=csv&gid=0";
+
+    const csvUrl = "https://cors.eu.org/" + sheetUrl;
+
+    const map = L.map("map").setView([48.7, 19.5], 7);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18
+    }).addTo(map);
+
+    fetch(csvUrl)
+      .then(r => r.text())
+      .then(text => {
+        const lines = text.trim().split("\n");
+        const bounds = [];
+
+        lines.forEach((line, i) => {
+          const nums = line.match(/-?\d+[.,]?\d*/g);
+          if (!nums || nums.length < 2) return;
+
+          const lat = parseFloat(nums[0].replace(",", "."));
+          const lon = parseFloat(nums[1].replace(",", "."));
+
+          if (isNaN(lat) || isNaN(lon)) return;
+
+          const icon = L.divIcon({
+            className: "number-icon",
+            html: i + 1,
+          });
+
+          L.marker([lat, lon], { icon }).addTo(map);
+          bounds.push([lat, lon]);
+        });
+
+        if (bounds.length > 0) map.fitBounds(bounds);
+      });
+  </script>
+</body>
+</html>
 
