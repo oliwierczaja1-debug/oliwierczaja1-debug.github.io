@@ -4,20 +4,20 @@
   <meta charset="UTF-8" />
   <title>Mapa dostaw</title>
 
-  <!-- Leaflet CSS (HTTPS!) -->
+  <!-- Leaflet CSS (JSDelivr CDN) -->
   <link
     rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
   />
 
   <style>
     html, body { margin: 0; padding: 0; height: 100%; }
     #map { height: 100vh; width: 100vw; }
-
     .number-icon {
       background-color: #ff5722;
       color: white;
-      width: 28px; height: 28px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       text-align: center;
       line-height: 28px;
@@ -29,25 +29,21 @@
 <body>
   <div id="map"></div>
 
-  <!-- Leaflet JS (HTTPS!) -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet JS (JSDelivr CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    // Link do Google Sheets CSV
     const sheetUrl =
       "https://docs.google.com/spreadsheets/d/1LkO9jIzfLNJAYlVLGgOdZ9K4pm2WpjAa6CzmRFXbDPI/export?format=csv&gid=0";
 
-    // Proxy do ominięcia CORS
     const csvUrl = "https://cors.eu.org/" + sheetUrl;
 
     const map = L.map("map").setView([48.7, 19.5], 7);
 
-    // Płytki mapy
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 18
     }).addTo(map);
 
-    // Pobieranie i rysowanie markerów
     fetch(csvUrl)
       .then(r => r.text())
       .then(text => {
@@ -60,6 +56,7 @@
 
           const lat = parseFloat(nums[0].replace(",", "."));
           const lon = parseFloat(nums[1].replace(",", "."));
+
           if (isNaN(lat) || isNaN(lon)) return;
 
           const icon = L.divIcon({
